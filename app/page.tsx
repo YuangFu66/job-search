@@ -3,15 +3,15 @@
 import { useState } from "react";
 import { JobResults } from "@/components/job-results";
 import { SearchForm } from "@/components/search-form";
-import type { JobResult } from "@/lib/jobs/types";
+import type { ResumeSearchResult } from "@/lib/jobs/types";
 
 export default function HomePage() {
-  const [jobs, setJobs] = useState<JobResult[]>([]);
+  const [jobs, setJobs] = useState<ResumeSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const handleResults = (nextJobs: JobResult[]) => {
+  const handleResults = (nextJobs: ResumeSearchResult[]) => {
     setJobs(nextJobs);
     setHasSearched(true);
   };
@@ -35,30 +35,30 @@ export default function HomePage() {
                 Scoutlane
               </span>
               <h1 className="mt-5 text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
-                Search jobs with cleaner signals and faster read-throughs.
+                Upload your resume and surface the roles that actually fit.
               </h1>
               <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">
-                Enter a role, location, and skill level to get normalized job listings with pay
-                details, direct application links, and concise summaries you can scan quickly.
+                Add your resume, target role, and preferred location to get twenty ranked job
+                matches with pay details, direct application links, and concise read-throughs.
               </p>
               <div className="mt-6 flex flex-wrap gap-3 text-sm text-slate-600">
                 <span className="rounded-full border border-slate-200 bg-white/70 px-3 py-1">
-                  Validation built in
+                  Resume-aware matching
                 </span>
                 <span className="rounded-full border border-slate-200 bg-white/70 px-3 py-1">
-                  Mock or live provider
+                  PDF and DOCX upload
                 </span>
                 <span className="rounded-full border border-slate-200 bg-white/70 px-3 py-1">
-                  Responsive by default
+                  20 ranked results
                 </span>
               </div>
             </div>
             <div className="rounded-[28px] bg-ink p-6 text-white">
               <p className="text-sm uppercase tracking-[0.18em] text-white/60">What you get</p>
               <ul className="mt-4 space-y-4 text-sm leading-6 text-white/85">
-                <li>Normalized results with title, company, location, pay range, and apply link.</li>
-                <li>Three-sentence summaries focused on responsibilities, qualifications, and work details.</li>
-                <li>Backend search logic that is ready for remote, salary, and sponsorship filters later.</li>
+                <li>Resume parsing for PDF and DOCX uploads with lightweight keyword extraction.</li>
+                <li>Twenty job cards ranked by title fit, location fit, and overlap with resume skills.</li>
+                <li>Concise summaries centered on responsibilities, required skills, and compensation details.</li>
               </ul>
             </div>
           </div>
@@ -77,7 +77,7 @@ export default function HomePage() {
               <h2 className="text-2xl font-semibold tracking-tight text-ink">Results</h2>
               <p className="mt-1 text-sm text-slate-600">
                 {hasSearched
-                  ? `${jobs.length} role${jobs.length === 1 ? "" : "s"} found`
+                  ? `${jobs.length} personalized match${jobs.length === 1 ? "" : "es"} found`
                   : "Ready when you are"}
               </p>
             </div>

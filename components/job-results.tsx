@@ -1,7 +1,7 @@
-import type { JobResult } from "@/lib/jobs/types";
+import type { ResumeSearchResult } from "@/lib/jobs/types";
 
 type JobResultsProps = {
-  jobs: JobResult[];
+  jobs: ResumeSearchResult[];
   isLoading: boolean;
   error: string | null;
   hasSearched: boolean;
@@ -39,7 +39,7 @@ export function JobResults({ jobs, isLoading, error, hasSearched }: JobResultsPr
       <section className="rounded-[24px] border border-dashed border-slate-300 bg-white/70 p-8 text-center">
         <h2 className="text-lg font-semibold">No matching roles yet</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Try broadening the title, changing the location, or selecting a different skill level.
+          Try a broader title, a different location, or a resume with more role-specific details.
         </p>
       </section>
     );
@@ -50,7 +50,7 @@ export function JobResults({ jobs, isLoading, error, hasSearched }: JobResultsPr
       <section className="rounded-[24px] border border-dashed border-slate-300 bg-white/70 p-8 text-center">
         <h2 className="text-lg font-semibold">Start with a focused search</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Search by role, location, and seniority to see concise, application-ready results.
+          Upload your resume and search by role and location to see ranked job matches.
         </p>
       </section>
     );
@@ -72,6 +72,11 @@ export function JobResults({ jobs, isLoading, error, hasSearched }: JobResultsPr
                 <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-800">
                   {job.payRange}
                 </span>
+                {job.relevanceScore ? (
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
+                    {job.relevanceScore}% match
+                  </span>
+                ) : null}
               </div>
             </div>
             <a

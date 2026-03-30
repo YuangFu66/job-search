@@ -1,5 +1,10 @@
 const sentencePattern = /[^.!?]+[.!?]+/g;
 
+type SummaryOptions = {
+  minSentences?: number;
+  maxSentences?: number;
+};
+
 function collapseWhitespace(value: string) {
   return value.replace(/\s+/g, " ").trim();
 }
@@ -26,7 +31,13 @@ function pickSentence(sentences: string[], keywords: string[]) {
   );
 }
 
-export function createJobSummary(description: string, payRange?: string | null) {
+export function createJobSummary(
+  description: string,
+  payRange?: string | null,
+  options: SummaryOptions = {}
+) {
+  const minSentences = options.minSentences ?? 3;
+  const maxSentences = options.maxSentences ?? 3;
   const sentences = splitSentences(description);
   if (sentences.length === 0) {
     return payRange
@@ -70,21 +81,21 @@ export function createJobSummary(description: string, payRange?: string | null) 
     .map((sentence) => sentence.replace(/\s+/g, " ").trim())
     .filter((sentence, index, array) => array.findIndex((item) => item === sentence) === index);
 
-  while (summaryParts.length < 3) {
+  while (summaryParts.length < minSentences) {
     summaryParts.push(
       summaryParts.length === 0
         ? "Responsibilities were not provided."
         : summaryParts.length === 1
           ? "Qualifications were not provided."
           : payRange
-            ? `Pay range: ${payRange}.`
+            ? `Compensation details include ${payRange}.`
             : "Compensation details were not provided."
     );
   }
 
   if (payRange && !summaryParts[2]?.toLowerCase().includes(payRange.toLowerCase())) {
-    summaryParts[2] = `${summaryParts[2]?.replace(/[.!?]+$/, "") ?? "Compensation details are available"}. Pay range: ${payRange}.`;
+    summaryParts[2] = `${summaryParts[2]?.replace(/[.!?]+$/, "") ?? "Compensation details are available"}; pay range ${payRange}.`;
   }
 
-  return summaryParts.slice(0, 3).join(" ");
+  return summaryParts.slice(0, maxSentences).join(" ");
 }

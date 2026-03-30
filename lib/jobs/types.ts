@@ -13,6 +13,25 @@ export type JobResult = {
   payRange: string;
   summary: string;
   applicationUrl: string;
+  relevanceScore?: number;
+};
+
+export type ResumeSearchInput = {
+  jobTitle: string;
+  location: string;
+  resumeText: string;
+};
+
+export type ParsedResume = {
+  text: string;
+  skills: string[];
+  keywords: string[];
+  yearsOfExperience?: number;
+  seniority: SkillLevel;
+};
+
+export type ResumeSearchResult = JobResult & {
+  relevanceScore: number;
 };
 
 export type RawJob = {

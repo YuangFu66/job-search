@@ -1,6 +1,6 @@
 # Scoutlane Job Search MVP
 
-Scoutlane is a production-style Next.js job search MVP that lets users search by job title, location, and skill level, then view normalized results with compensation details, direct application URLs, and concise three-sentence summaries.
+Scoutlane is a production-style Next.js job search MVP that lets users upload a resume, search by job title and location, and view twenty ranked job matches with compensation details, direct application URLs, and concise summaries.
 
 ## Tech stack
 
@@ -12,7 +12,10 @@ Scoutlane is a production-style Next.js job search MVP that lets users search by
 ## Features
 
 - Responsive search UI with loading, empty, and error states
-- Server-side API route at `/api/jobs/search`
+- Resume upload support for PDF and DOCX files
+- Server-side API route at `/api/search-with-resume`
+- Resume parsing and keyword-based job relevance scoring
+- Expanded mock jobs dataset with twenty-plus roles
 - Provider adapter layer with a default mock jobs provider
 - Optional live provider wiring through environment variables
 - Normalized result shape:
@@ -24,7 +27,8 @@ Scoutlane is a production-style Next.js job search MVP that lets users search by
   location,
   payRange,
   summary,
-  applicationUrl
+  applicationUrl,
+  relevanceScore
 }
 ```
 
@@ -32,6 +36,7 @@ Scoutlane is a production-style Next.js job search MVP that lets users search by
 
 ```text
 app/
+  api/search-with-resume/route.ts
   api/jobs/search/route.ts
   globals.css
   layout.tsx
@@ -41,12 +46,16 @@ components/
   search-form.tsx
 data/
   mock-jobs.ts
+lib/
+  jobMatcher.ts
 lib/jobs/
   provider.ts
   providers/
   schema.ts
   summary.ts
   types.ts
+lib/
+  resumeParser.ts
 ```
 
 ## Environment variables
@@ -64,6 +73,16 @@ Variables:
 - `JOBS_API_KEY`: bearer token for the live provider
 
 If `JOBS_PROVIDER` is not set to `live`, the app uses bundled mock data.
+
+## How resume parsing works
+
+- The frontend uploads the resume as `multipart/form-data`.
+- The backend accepts PDF and DOCX files.
+- PDF parsing uses `pdf-parse`.
+- DOCX parsing uses `mammoth` to extract raw text.
+- Parsed text is kept in memory for the request only and is not stored in a database.
+- After extraction, the app derives skills, repeated keywords, and an approximate seniority level from the resume text.
+- Jobs are ranked using a weighted score based on job title fit, location fit, overlap with resume skills and keywords, and seniority alignment.
 
 ## Run locally
 
@@ -103,11 +122,12 @@ Recommended Vercel settings:
 
 ## Main user flow
 
-1. Enter a job title, location, and skill level.
-2. Submit the search form.
-3. The frontend posts to `/api/jobs/search`.
-4. The backend validates the request, queries the selected provider, normalizes results, and returns JSON.
-5. The UI renders job cards with salary, apply link, and a generated summary.
+1. Upload a resume in PDF or DOCX format.
+2. Enter a job title and location.
+3. Submit the search form.
+4. The frontend posts the resume file and search fields to `/api/search-with-resume`.
+5. The backend parses the resume, extracts skills and keywords, ranks jobs, and returns the top 20 matches.
+6. The UI renders job cards with salary, relevance score, apply link, and a generated summary.
 
 ## Swapping in a live jobs API
 

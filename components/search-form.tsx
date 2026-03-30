@@ -2,38 +2,42 @@
 
 import type { FormEvent, ReactNode } from "react";
 import { useState, useTransition } from "react";
-import { skillLevels } from "@/lib/jobs/schema";
-import type { JobResult, JobSearchInput } from "@/lib/jobs/types";
+import type { ResumeSearchResult } from "@/lib/jobs/types";
 
 type SearchResponse =
   | {
-      jobs: JobResult[];
+      jobs: ResumeSearchResult[];
     }
   | {
       error: string;
-      fieldErrors?: Partial<Record<keyof JobSearchInput, string[]>>;
+      fieldErrors?: Partial<Record<"resume" | "jobTitle" | "location", string[]>>;
     };
 
 type SearchFormProps = {
-  onResults: (jobs: JobResult[]) => void;
+  onResults: (jobs: ResumeSearchResult[]) => void;
   onError: (message: string | null) => void;
   onLoading: (value: boolean) => void;
 };
 
-const initialValues: JobSearchInput = {
-  title: "",
-  location: "",
-  skillLevel: "mid-level"
+type ResumeSearchFormState = {
+  jobTitle: string;
+  location: string;
+};
+
+const initialValues: ResumeSearchFormState = {
+  jobTitle: "",
+  location: ""
 };
 
 export function SearchForm({ onResults, onError, onLoading }: SearchFormProps) {
-  const [form, setForm] = useState<JobSearchInput>(initialValues);
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof JobSearchInput, string[]>>>(
-    {}
-  );
+  const [form, setForm] = useState<ResumeSearchFormState>(initialValues);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<"resume" | "jobTitle" | "location", string[]>>
+  >({});
   const [isPending, startTransition] = useTransition();
 
-  const updateField = <K extends keyof JobSearchInput>(key: K, value: JobSearchInput[K]) => {
+  const updateField = (key: keyof ResumeSearchFormState, value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
   };
 
@@ -44,16 +48,25 @@ export function SearchForm({ onResults, onError, onLoading }: SearchFormProps) {
     setFieldErrors({});
 
     startTransition(async () => {
+      if (!resumeFile) {
+        onLoading(false);
+        setFieldErrors({ resume: ["Upload a resume before searching."] });
+        onResults([]);
+        return;
+      }
+
       try {
-        const response = await fetch("/api/jobs/search", {
+        const body = new FormData();
+        body.set("resume", resumeFile);
+        body.set("jobTitle", form.jobTitle);
+        body.set("location", form.location);
+
+        const response = await fetch("/api/search-with-resume", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(form)
+          body
         });
 
-        const payload = (await response.json()) as SearchResponse;
+        const payload = (await response.json()) as SearchResponse | ResumeSearchResult[];
 
         if (!response.ok) {
           if ("fieldErrors" in payload) {
@@ -62,6 +75,11 @@ export function SearchForm({ onResults, onError, onLoading }: SearchFormProps) {
 
           onResults([]);
           onError("error" in payload ? payload.error : "We couldn't complete that search.");
+          return;
+        }
+
+        if (Array.isArray(payload)) {
+          onResults(payload);
           return;
         }
 
@@ -87,16 +105,37 @@ export function SearchForm({ onResults, onError, onLoading }: SearchFormProps) {
       aria-busy={isPending}
       className="rounded-[28px] border border-white/60 bg-white/85 p-5 shadow-panel backdrop-blur md:p-6"
     >
-      <div className="grid gap-4 md:grid-cols-[1.5fr_1.1fr_0.9fr_auto] md:items-end">
+      <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr_1fr_auto] lg:items-end">
+        <Field
+          label="Resume"
+          error={fieldErrors.resume?.[0]}
+          input={
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
+              <input
+                name="resume"
+                type="file"
+                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                onChange={(event) => setResumeFile(event.target.files?.[0] ?? null)}
+                className="block w-full text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-ink file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-slate-800"
+              />
+              <p className="mt-2 text-xs text-slate-500">
+                Upload a PDF or DOCX resume. Parsed text stays in request memory only.
+              </p>
+              {resumeFile ? (
+                <p className="mt-2 text-xs font-medium text-aqua">{resumeFile.name}</p>
+              ) : null}
+            </div>
+          }
+        />
         <Field
           label="Job title"
-          error={fieldErrors.title?.[0]}
+          error={fieldErrors.jobTitle?.[0]}
           input={
             <input
-              name="title"
-              value={form.title}
-              onChange={(event) => updateField("title", event.target.value)}
-              placeholder="Frontend engineer"
+              name="jobTitle"
+              value={form.jobTitle}
+              onChange={(event) => updateField("jobTitle", event.target.value)}
+              placeholder="Product manager"
               required
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-aqua focus:bg-white"
             />
@@ -110,38 +149,18 @@ export function SearchForm({ onResults, onError, onLoading }: SearchFormProps) {
               name="location"
               value={form.location}
               onChange={(event) => updateField("location", event.target.value)}
-              placeholder="San Francisco, CA"
+              placeholder="Remote or Seattle, WA"
               required
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-aqua focus:bg-white"
             />
           }
         />
-        <Field
-          label="Skill level"
-          error={fieldErrors.skillLevel?.[0]}
-          input={
-            <select
-              name="skillLevel"
-              value={form.skillLevel}
-              onChange={(event) =>
-                updateField("skillLevel", event.target.value as JobSearchInput["skillLevel"])
-              }
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-aqua focus:bg-white"
-            >
-              {skillLevels.map((level) => (
-                <option key={level} value={level}>
-                  {level.replace("-", " ")}
-                </option>
-              ))}
-            </select>
-          }
-        />
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex h-[50px] items-center justify-center rounded-2xl bg-ink px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+          className="inline-flex h-[52px] items-center justify-center rounded-2xl bg-ink px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {isPending ? "Searching..." : "Search jobs"}
+          {isPending ? "Matching jobs..." : "Find matching jobs"}
         </button>
       </div>
     </form>
